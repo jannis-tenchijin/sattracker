@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenchijin SatTracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.3/satellite.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="flex flex-col md:flex-row h-[100dvh] overflow-hidden">
+
+    <!-- Sidebar -->
+    <div class="ui-panel w-full md:w-96 h-1/2 md:h-full flex flex-col z-50 shadow-2xl border-r border-slate-800/60 shrink-0">
+
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-800/60 bg-slate-950/60 shrink-0">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 id="app-title" class="text-xl font-bold text-white tracking-tight">Tenchijin SatTracker</h1>
+                    <p id="app-subtitle" class="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Japan Coverage</p>
+                </div>
+                <div class="text-right">
+                    <div id="live-clock" class="text-sm font-mono text-emerald-400 font-bold">--:--:-- JST</div>
+                    <div id="realtime-lbl" class="text-[9px] text-slate-500 uppercase tracking-widest mt-0.5">Real-Time</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 mt-3">
+                <span id="data-badge-dot" class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                <span id="data-badge" class="text-[9px] text-slate-500 tracking-wide">Loading TLE…</span>
+            </div>
+            <div id="next-data-strip" onclick="focusNextDataCandidate()" class="hidden mt-2 px-2.5 py-1.5 rounded-md bg-sky-500/10 border border-sky-500/20 items-center justify-between cursor-pointer hover:bg-sky-500/20 transition-colors">
+                <span id="next-data-lbl" class="text-[9px] text-sky-300/80 uppercase tracking-wide font-semibold">Next data in</span>
+                <span id="next-data-countdown" class="text-[11px] font-mono font-bold text-sky-300"></span>
+            </div>
+        </div>
+
+        <!-- Region & Sensor Type Filters -->
+        <div class="px-5 py-3 border-b border-slate-800/60 bg-black/20 shrink-0 flex flex-col gap-2">
+            <div class="flex gap-2">
+                <select id="region-select" onchange="onRegionChange(this.value)"
+                    class="region-select flex-1 min-w-0 text-xs rounded-md px-3 py-2 font-medium tracking-wide">
+                </select>
+                <select id="type-select" onchange="onTypeChange(this.value)"
+                    class="region-select flex-1 min-w-0 text-xs rounded-md px-3 py-2 font-medium tracking-wide">
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button id="acquisition-filter-btn" onclick="toggleLikelyAcquisitionOnly()"
+                    class="filter-toggle-btn flex-1 min-w-0 text-[10px] font-semibold rounded-md px-2 py-1.5 border transition-colors truncate"></button>
+                <button id="free-data-filter-btn" onclick="toggleFreeDataOnly()"
+                    class="filter-toggle-btn flex-1 min-w-0 text-[10px] font-semibold rounded-md px-2 py-1.5 border transition-colors truncate"></button>
+            </div>
+        </div>
+
+        <!-- Pinned Himawari -->
+        <div class="p-4 border-b border-slate-800/60 bg-black/30 shrink-0">
+            <h2 id="geo-lbl" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Geostationary</h2>
+            <div id="himawari-card" class="rounded-lg bg-slate-800/40 border border-slate-700/60 p-3 card-hover transition-colors cursor-pointer" onclick="focusSatellite('himawari9', 'himawari-card')">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="font-bold text-yellow-400 flex items-center gap-2 text-xs">
+                        <div class="w-2 h-2 rounded-full bg-yellow-400 pulse-live"></div> Himawari-9
+                    </span>
+                    <span id="live-lbl" class="text-[9px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Live</span>
+                </div>
+                <div id="full-disk-lbl" class="text-xs text-slate-400 mt-1">Full Disk</div>
+                <div id="geo-cycle-lbl" class="text-[10px] text-slate-500 mt-1">Geostationary • 10 min cycle</div>
+            </div>
+        </div>
+
+        <!-- Fused pass timeline: past passes above, future below, scrolled
+             to "now" on load. Header label tracks what's at the top. -->
+        <div id="pass-panel" class="flex-1 flex flex-col min-h-0 bg-black/10">
+            <div class="px-4 py-2 border-b border-slate-800/60 bg-slate-900/70 flex justify-between items-center shrink-0">
+                <h2 id="pass-list-lbl" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Upcoming Passes</h2>
+                <button id="satellite-filter-clear" onclick="clearSatelliteFilter()"
+                    class="hidden text-[9px] font-bold text-emerald-400 hover:text-emerald-300 uppercase tracking-widest px-2 py-0.5 rounded border border-emerald-500/40 hover:border-emerald-400 transition-colors">
+                    Clear
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3 pointer-events-auto" id="pass-list" style="overscroll-behavior: contain;" onwheel="event.stopPropagation()">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div class="flex-1 relative w-full h-1/2 md:h-full min-h-0">
+
+        <!-- Top Left Controls (Roadmap, Lang & Legend) -->
+        <div class="absolute top-2 left-2 right-2 flex gap-2 z-[1000] pointer-events-none">
+
+            <!-- Future Features Roadmap Button -->
+            <div class="relative pointer-events-auto flex-shrink-0">
+                <button onclick="toggleFutureFeatures()" class="ui-panel hover:bg-slate-800 text-white rounded-lg p-2 md:px-3 shadow-xl border border-slate-700 transition-colors flex items-center justify-center group h-[38px]">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    <span id="roadmap-lbl" class="text-[10px] uppercase font-bold tracking-wider hidden md:block whitespace-nowrap ml-2">Roadmap</span>
+                </button>
+
+                <!-- Popup -->
+                <div id="future-features-popup" class="hidden absolute top-full left-0 mt-2 ui-panel rounded-lg p-4 w-64 border border-slate-700 shadow-2xl transition-all z-[1001]">
+                    <div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
+                        <h3 id="roadmap-title" class="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">Roadmap</h3>
+                        <button onclick="toggleFutureFeatures()" class="text-slate-400 hover:text-white transition-colors text-lg leading-none">&times;</button>
+                    </div>
+                    <ul id="roadmap-list" class="text-[10px] text-slate-300 space-y-2 list-disc pl-4 marker:text-slate-600 max-h-80 overflow-y-auto pr-1">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Language Toggle Button -->
+            <div class="relative pointer-events-auto flex-shrink-0">
+                <button onclick="toggleLang()" class="ui-panel hover:bg-slate-800 text-white rounded-lg px-3 shadow-xl border border-slate-700 transition-colors flex items-center justify-center h-[38px]">
+                    <svg class="w-4 h-4 text-blue-400 md:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path></svg>
+                    <span id="lang-btn-text" class="text-[11px] uppercase font-bold tracking-wider hidden md:block whitespace-nowrap">JP</span>
+                </button>
+            </div>
+
+            <!-- Compact Legend Overlay -->
+            <div class="ui-panel rounded-lg p-1.5 flex flex-1 items-center shadow-lg pointer-events-auto min-h-[38px] max-h-[85px] overflow-y-auto max-w-[95%] md:max-w-fit">
+                <span id="tracking-lbl" class="font-bold text-slate-500 tracking-wider shrink-0 ml-1 mr-2 text-[9px] md:text-[10px]">TRACKING:</span>
+                <div id="legend-container" class="flex flex-wrap gap-x-3 gap-y-1 md:gap-x-4 items-center hide-scrollbar">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+        </div>
+
+        <div id="map" class="h-full w-full"></div>
+    </div>
+
+    <!-- Satellite info popup -->
+    <div id="sat-info-overlay" onclick="if(event.target===this) closeSatelliteInfo()"
+        class="hidden fixed inset-0 bg-black/60 z-[2000] flex items-center justify-center p-4">
+        <div class="ui-panel rounded-lg border border-slate-700 shadow-2xl w-full max-w-xs p-4">
+            <div class="flex justify-between items-start mb-3 border-b border-slate-700 pb-2">
+                <div>
+                    <h3 id="sat-info-name" class="text-sm font-bold text-white"></h3>
+                    <p id="sat-info-types" class="text-[10px] text-slate-400 uppercase tracking-wide mt-0.5"></p>
+                </div>
+                <button onclick="closeSatelliteInfo()" class="text-slate-400 hover:text-white transition-colors text-lg leading-none">&times;</button>
+            </div>
+            <dl id="sat-info-fields" class="space-y-1.5 text-xs"></dl>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/region-shapes.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/geometry.js"></script>
+    <script src="js/tle.js"></script>
+    <script src="js/passes.js"></script>
+    <script src="js/clouds.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/terminator.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
