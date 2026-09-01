@@ -5,6 +5,12 @@ when, and what kind of data will that give us?" — built to make satellite
 data availability legible at a glance instead of having to remember each
 mission's revisit cycle.
 
+**Live demo:** [jannis-tenchijin.github.io/sattracker](https://jannis-tenchijin.github.io/sattracker/)
+— served via GitHub Pages straight from this repo's `main` branch, no
+server to run yourself. TLE and cloud-forecast fetches hit CORS-open
+public APIs directly from the browser, so it works identically to running
+it locally.
+
 ## Run it
 
 ```bash
@@ -60,9 +66,12 @@ app falls back to a snapshot bundled from 2026-08-28 and says so in the UI.
 - [docs/RESEARCH.md](docs/RESEARCH.md) — raw findings from research
   agents (data sources, licenses, launch dates, latency figures) that
   informed the above.
-- [../WishList.md](../WishList.md) — the user's own running list of asks,
-  annotated inline with `[done ...]` / `[queued ...]` tags pointing back
-  into CHANGELOG.md.
+- `../WishList.md` — the user's own running list of asks, annotated inline
+  with `[done ...]` / `[queued ...]` tags pointing back into CHANGELOG.md.
+  Lives one level up, outside this repo (see below).
 
-The original Gemini-generated prototype this was rebuilt from is kept at
-the repo root as `../tenchijin_sattracker.html` for reference.
+This repo is scoped to just the `sattracker/` app — it's a subfolder of a
+larger local working directory that also holds `WishList.md` and the
+original Gemini-generated prototype this was rebuilt from
+(`tenchijin_sattracker.html`). Neither is published here; both only exist
+on the local machine this was developed on.

@@ -30,6 +30,10 @@ Then open `http://localhost:8000`. Must be served over `http://`/`https://`
 (not opened as a bare `file://` path) for the CelesTrak fetch to reliably
 work across browsers.
 
+Also live at https://jannis-tenchijin.github.io/sattracker/ (GitHub
+Pages, deployed from this repo's `main` branch root — no build step,
+just whatever's committed).
+
 ## Conventions
 
 - Keep the satellite list in `js/config.js` as the single source of truth:
@@ -77,8 +81,11 @@ work across browsers.
 
 ## Progress tracking
 
-Don't rely on chat history for project memory — this is a hackathon repo
-with no git yet. Log real changes in `docs/CHANGELOG.md` (the primary,
+Don't rely on chat history for project memory. This folder is its own
+git repo (`sattracker/` — not the larger local working directory it sits
+inside, which also holds `WishList.md` and the original prototype),
+pushed to https://github.com/jannis-tenchijin/sattracker and deployed via
+GitHub Pages. Log real changes in `docs/CHANGELOG.md` (the primary,
 most-complete record — read it first when picking this back up), park
 unbuilt ideas in `docs/IDEAS.md`, record known-broken/approximate behavior
 in `docs/CHALLENGES.md`, and keep research-agent findings in

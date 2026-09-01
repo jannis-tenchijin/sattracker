@@ -2,6 +2,21 @@
 
 All notable changes to SatTracker are logged here, most recent first.
 
+## 2026-08-28 — published to GitHub Pages
+
+`sattracker/` is now its own git repo (previously untracked — the parent
+`Hackathon 2` working directory still isn't a repo), pushed to
+https://github.com/jannis-tenchijin/sattracker, deployed via GitHub
+Pages (classic branch deploy, `main` / root — repo root already *is* the
+app root, so no build step or Actions workflow needed). Live at
+https://jannis-tenchijin.github.io/sattracker/.
+
+Updated `README.md` (added the live-demo link up top; fixed the
+`../WishList.md`/`../tenchijin_sattracker.html` references, which used
+to resolve locally but point outside this repo now that it's scoped to
+just this subfolder) and `CLAUDE.md` (the "no git yet" line was now
+false, and noted the Pages URL/remote).
+
 ## 2026-08-28 — trimmed the roadmap popup to 6 items
 
 Per request, removed 7 of the 13 items added in the previous roadmap
